@@ -10,15 +10,29 @@ const nextConfig = {
   output: "export",
   distDir: 'build',
   reactStrictMode: true,
-  transpilePackages: ['near-connect-hooks'],
   outputFileTracingRoot: path.join(__dirname, '../'),
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
+      crypto: false,
+      stream: false,
+      http: false,
+      https: false,
+      zlib: false,
+      path: false,
+      os: false,
     };
+
+    // Ensure webpack can resolve modules from example/node_modules
+    config.resolve.modules = [
+      path.resolve(__dirname, 'node_modules'),
+      'node_modules',
+      ...(config.resolve.modules || [])
+    ];
+
     return config;
   },
 }
