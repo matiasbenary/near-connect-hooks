@@ -1,0 +1,58 @@
+{
+  "name": "near-connect-hooks",
+  "version": "1.0.0",
+  "description": "React hooks for NEAR wallet integration using @hot-labs/near-connect",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "near",
+    "near-protocol",
+    "wallet",
+    "react",
+    "hooks",
+    "blockchain",
+    "web3",
+    "hot-wallet",
+    "near-connect"
+  ],
+  "author": "Matias Benary <matiasbenary@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matiasbenary/near-connect-hooks.git"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@hot-labs/near-connect": "^0.6.9",
+    "@near-js/providers": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.11",
+    "vite-plugin-dts": "^4.3.0"
+  }
+}
