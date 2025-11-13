@@ -30,6 +30,7 @@ export default defineConfig({
         'react/jsx-runtime',
         '@hot-labs/near-connect',
         '@near-js/providers',
+        '@walletconnect/sign-client',
       ],
       output: {
         globals: {
