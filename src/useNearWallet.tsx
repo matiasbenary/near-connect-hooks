@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   ReactNode,
+  useMemo,
 } from "react";
 import { JsonRpcProvider } from "@near-js/providers";
 import { NearConnector, type NearWalletBase } from "@hot-labs/near-connect";
@@ -31,20 +32,49 @@ interface NearContextValue {
   viewFunction: (params: ViewFunctionParams) => Promise<any>;
   callFunction: (params: FunctionCallParams) => Promise<any>;
   provider: JsonRpcProvider;
+  connector: NearConnector;
+  network: "mainnet" | "testnet";
 }
+
+export interface NearProviderConfig {
+  network?: "mainnet" | "testnet";
+  rpcUrl?: string;
+}
+
+export interface NearProviderProps {
+  children: ReactNode;
+  config?: NearProviderConfig;
+}
+
+const DEFAULT_CONFIG: Required<NearProviderConfig> = {
+  network: "testnet",
+  rpcUrl: "https://test.rpc.fastnear.com",
+};
+
+const DEFAULT_RPC_URLS = {
+  mainnet: "https://rpc.mainnet.near.org",
+  testnet: "https://test.rpc.fastnear.com",
+};
 
 const NearContext = createContext<NearContextValue | undefined>(undefined);
 
-const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
-
-const connector = new NearConnector({
-    network: "testnet",
-});
-
-export function NearProvider({ children }: { children: ReactNode }) {
+export function NearProvider({ children, config = {} }: NearProviderProps) {
   const [wallet, setWallet] = useState<NearWalletBase | undefined>(undefined);
   const [signedAccountId, setSignedAccountId] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const network = config.network || DEFAULT_CONFIG.network;
+  const rpcUrl = config.rpcUrl || DEFAULT_RPC_URLS[network];
+
+  const provider = useMemo(
+    () => new JsonRpcProvider({ url: rpcUrl }),
+    [rpcUrl]
+  );
+
+  const connector = useMemo(
+    () => new NearConnector({ network }),
+    [network]
+  );
 
   useEffect(() => {
     async function initializeConnector() {
@@ -79,7 +109,7 @@ export function NearProvider({ children }: { children: ReactNode }) {
         connector.removeAllListeners("wallet:signIn");
       }
     };
-  }, []);
+  }, [connector]);
 
   async function signIn() {
     if (!connector) return;
@@ -149,6 +179,8 @@ export function NearProvider({ children }: { children: ReactNode }) {
     viewFunction,
     callFunction,
     provider,
+    connector,
+    network,
   };
 
   return <NearContext.Provider value={value}>{children}</NearContext.Provider>;

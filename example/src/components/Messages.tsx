@@ -35,9 +35,9 @@ export default function Messages({ messages }: MessagesProps) {
   return (
     <div className="container fade-animation">
       <h2 className="my-4">Messages</h2>
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <Message
-          key={`${message.sender}-${message.text}`}
+          key={`${index}-${message.sender}-${message.text}`}
           {...message}
         />
       ))}
