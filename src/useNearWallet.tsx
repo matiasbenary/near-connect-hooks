@@ -6,7 +6,7 @@ import {
   ReactNode,
   useMemo,
 } from "react";
-import { JsonRpcProvider } from "@near-js/providers";
+import { JsonRpcProvider } from "near-api-js";
 import { NearConnector, type NearWalletBase } from "@hot-labs/near-connect";
 
 interface ViewFunctionParams {
@@ -58,13 +58,15 @@ const DEFAULT_RPC_URLS = {
 
 const NearContext = createContext<NearContextValue | undefined>(undefined);
 
-export function NearProvider({ children, config = {} }: NearProviderProps) {
+type NearConnectorOptions = ConstructorParameters<typeof NearConnector>[0];
+
+export function NearProvider({ children, config = {} }: { children: ReactNode, config?: NearConnectorOptions }) {
   const [wallet, setWallet] = useState<NearWalletBase | undefined>(undefined);
   const [signedAccountId, setSignedAccountId] = useState("");
   const [loading, setLoading] = useState(true);
 
   const network = config.network || DEFAULT_CONFIG.network;
-  const rpcUrl = config.rpcUrl || DEFAULT_RPC_URLS[network];
+  const rpcUrl = DEFAULT_RPC_URLS[network];
 
   const provider = useMemo(
     () => new JsonRpcProvider({ url: rpcUrl }),
@@ -72,7 +74,7 @@ export function NearProvider({ children, config = {} }: NearProviderProps) {
   );
 
   const connector = useMemo(
-    () => new NearConnector({ network }),
+    () => new NearConnector(config),
     [network]
   );
 
@@ -136,7 +138,7 @@ export function NearProvider({ children, config = {} }: NearProviderProps) {
     method,
     args = {},
   }: ViewFunctionParams) {
-    return provider.callFunction(contractId, method, args);
+    return provider.callFunction({ contractId, method, args });
   }
 
   async function callFunction({
@@ -152,7 +154,6 @@ export function NearProvider({ children, config = {} }: NearProviderProps) {
     return wallet.signAndSendTransactions({
       transactions: [
         {
-          signerId: signedAccountId,
           receiverId: contractId,
           actions: [
             {

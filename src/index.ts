@@ -1,1 +1,1 @@
-export * from './useNearWallet';
+export * from './useNearWallet.js';

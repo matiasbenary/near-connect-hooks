@@ -1,6 +1,5 @@
-import { utils } from "near-api-js";
 import { useState, useEffect, FormEvent } from "react";
-
+import { yoctoToNear } from "near-api-js"
 import Form from "@/components/Form";
 import SignIn from "@/components/SignIn";
 import Messages from "@/components/Messages";
@@ -52,7 +51,9 @@ export default function Home() {
     const { fieldset, message, donation } = target;
     fieldset.disabled = true;
 
-    const deposit = utils.format.parseNearAmount(donation.value) || undefined;
+    const deposit = donation.value && parseFloat(donation.value) > 0
+      ? yoctoToNear(donation.value)
+      : undefined;
 
     callFunction({
       contractId: GuestbookNearContract,
@@ -61,7 +62,7 @@ export default function Home() {
       deposit,
     }).catch((e) => {
       console.log(e);
-      
+
       setMessages([...messages]);
     });
 
@@ -72,7 +73,7 @@ export default function Home() {
       {
         sender: signedAccountId,
         text: message.value,
-        premium: parseFloat(donation.value) >= 1,
+        premium: parseFloat(donation.value) >= 0.1,
       },
       ...messages,
     ]);
