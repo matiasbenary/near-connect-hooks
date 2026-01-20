@@ -52,7 +52,7 @@ export default function Home() {
     fieldset.disabled = true;
 
     const deposit = donation.value && parseFloat(donation.value) > 0
-      ? yoctoToNear(donation.value)
+      ? yoctoToNear(BigInt(donation.value))
       : undefined;
 
     callFunction({
