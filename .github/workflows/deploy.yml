@@ -29,14 +29,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build library
         run: npm run build
 
       - name: Install example dependencies
         working-directory: ./example
-        run: npm install
+        run: npm ci
 
       - name: Build example
         working-directory: ./example
