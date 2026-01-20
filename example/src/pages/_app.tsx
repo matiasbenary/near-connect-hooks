@@ -9,7 +9,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <NearProvider
       config={{
-        network: NetworkId
+        network: NetworkId,
+        providers: {
+          testnet: ['https://test.rpc.fastnear.com']
+        }
       }}
     >
       <Navigation />

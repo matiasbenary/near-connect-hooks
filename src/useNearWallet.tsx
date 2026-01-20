@@ -8,48 +8,15 @@ import {
 } from "react";
 import { JsonRpcProvider } from "near-api-js";
 import { NearConnector, type NearWalletBase } from "@hot-labs/near-connect";
-
-interface ViewFunctionParams {
-  contractId: string;
-  method: string;
-  args?: Record<string, unknown>;
-}
-
-interface FunctionCallParams {
-  contractId: string;
-  method: string;
-  args?: Record<string, unknown>;
-  gas?: string;
-  deposit?: string;
-}
-
-interface NearContextValue {
-  signedAccountId: string;
-  wallet: NearWalletBase | undefined;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
-  loading: boolean;
-  viewFunction: (params: ViewFunctionParams) => Promise<any>;
-  callFunction: (params: FunctionCallParams) => Promise<any>;
-  provider: JsonRpcProvider;
-  connector: NearConnector;
-  network: "mainnet" | "testnet";
-}
-
-export interface NearProviderConfig {
-  network?: "mainnet" | "testnet";
-  rpcUrl?: string;
-}
-
-export interface NearProviderProps {
-  children: ReactNode;
-  config?: NearProviderConfig;
-}
-
-const DEFAULT_CONFIG: Required<NearProviderConfig> = {
-  network: "testnet",
-  rpcUrl: "https://test.rpc.fastnear.com",
-};
+import { Actions, sendTransaction } from "./actions.js";
+import type {
+  ViewFunctionParams,
+  FunctionCallParams,
+  TransferParams,
+  AddFunctionCallKeyParams,
+  DeleteKeyParams,
+  NearContextValue,
+} from "./types.js";
 
 const DEFAULT_RPC_URLS = {
   mainnet: "https://rpc.mainnet.near.org",
@@ -65,7 +32,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
   const [signedAccountId, setSignedAccountId] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const network = config.network || DEFAULT_CONFIG.network;
+  const network = config.network || "testnet";
   const rpcUrl = DEFAULT_RPC_URLS[network];
 
   const provider = useMemo(
@@ -148,27 +115,30 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     gas = "30000000000000",
     deposit = "0",
   }: FunctionCallParams) {
+    return sendTransaction(connector, contractId, [
+      Actions.functionCall(method, args, gas, deposit),
+    ]);
+  }
 
-    const wallet = await connector.wallet()
+  async function transfer({ receiverId, amount }: TransferParams) {
+    return sendTransaction(connector, receiverId, [Actions.transfer(amount)]);
+  }
 
-    return wallet.signAndSendTransactions({
-      transactions: [
-        {
-          receiverId: contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: method,
-                args,
-                gas,
-                deposit,
-              },
-            },
-          ],
-        },
-      ],
-    });
+  async function addFunctionCallKey({
+    publicKey,
+    contractId,
+    methodNames = [],
+    allowance,
+  }: AddFunctionCallKeyParams) {
+    return sendTransaction(connector, signedAccountId, [
+      Actions.addFunctionCallKey(publicKey, contractId, methodNames, allowance),
+    ]);
+  }
+
+  async function deleteKey({ publicKey }: DeleteKeyParams) {
+    return sendTransaction(connector, signedAccountId, [
+      Actions.deleteKey(publicKey),
+    ]);
   }
 
   const value: NearContextValue = {
@@ -179,6 +149,9 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     loading,
     viewFunction,
     callFunction,
+    transfer,
+    addFunctionCallKey,
+    deleteKey,
     provider,
     connector,
     network,
