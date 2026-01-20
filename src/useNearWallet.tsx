@@ -7,7 +7,7 @@ import {
   useMemo,
 } from "react";
 import { JsonRpcProvider } from "near-api-js";
-import { NearConnector, type NearWalletBase } from "@hot-labs/near-connect";
+import { NearConnector, type SignedMessage, type NearWalletBase } from "@hot-labs/near-connect";
 import { Actions, sendTransaction } from "./actions.js";
 import type {
   ViewFunctionParams,
@@ -141,6 +141,11 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     ]);
   }
 
+  async function signNEP413Message({ message, recipient, nonce } : { message: string; recipient: string; nonce: Uint8Array; }): Promise<SignedMessage> {
+    if (!wallet) throw new Error("Wallet is not connected");
+    return wallet.signMessage({ message, recipient, nonce });
+  }
+
   const value: NearContextValue = {
     signedAccountId,
     wallet,
@@ -151,6 +156,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     callFunction,
     transfer,
     addFunctionCallKey,
+    signNEP413Message,
     deleteKey,
     provider,
     connector,

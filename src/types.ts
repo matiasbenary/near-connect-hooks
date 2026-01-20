@@ -1,5 +1,5 @@
-import { JsonRpcProvider } from "near-api-js";
-import { NearConnector, type NearWalletBase } from "@hot-labs/near-connect";
+import { NearConnector, type SignedMessage, type NearWalletBase } from "@hot-labs/near-connect";
+import { type FinalExecutionOutcome, JsonRpcProvider } from "near-api-js";
 
 export interface ViewFunctionParams {
   contractId: string;
@@ -42,10 +42,11 @@ export interface NearContextValue {
   signOut: () => Promise<void>;
   loading: boolean;
   viewFunction: (params: ViewFunctionParams) => Promise<any>;
-  callFunction: (params: FunctionCallParams) => Promise<any>;
-  transfer: (params: TransferParams) => Promise<any>;
-  addFunctionCallKey: (params: AddFunctionCallKeyParams) => Promise<any>;
-  deleteKey: (params: DeleteKeyParams) => Promise<any>;
+  callFunction: (params: FunctionCallParams) => Promise<FinalExecutionOutcome>;
+  transfer: (params: TransferParams) => Promise<FinalExecutionOutcome>;
+  addFunctionCallKey: (params: AddFunctionCallKeyParams) => Promise<FinalExecutionOutcome>;
+  deleteKey: (params: DeleteKeyParams) => Promise<FinalExecutionOutcome>;
+  signNEP413Message: (params: { message: string; recipient: string; nonce: Uint8Array; }) => Promise<SignedMessage>;
   provider: JsonRpcProvider;
   connector: NearConnector;
   network: "mainnet" | "testnet";
