@@ -13,6 +13,7 @@
     "postinstall": "rm -rf node_modules/near-connect-hooks/node_modules"
   },
   "dependencies": {
+    "@hot-labs/near-connect": "^0.8.2",
     "bootstrap": "^5",
     "bootstrap-icons": "^1.11.3",
     "near-api-js": "^7.0.0",

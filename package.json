@@ -37,16 +37,16 @@
     "url": "git+https://github.com/matiasbenary/near-connect-hooks.git"
   },
   "peerDependencies": {
+    "@hot-labs/near-connect": "^0.8.2",
+    "near-api-js": "^7.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
-  "dependencies": {
-    "@hot-labs/near-connect": "^0.8.2",
-    "near-api-js": "^7.0.0"
-  },
   "devDependencies": {
+    "@hot-labs/near-connect": "^0.8.2",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
+    "near-api-js": "^7.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^5.9.3"
