@@ -38,6 +38,7 @@ export interface DeleteKeyParams {
 }
 
 export interface NearContextValue {
+  network: "mainnet" | "testnet";
   signedAccountId: string;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;

@@ -19,7 +19,7 @@ import type {
 } from "./types.js";
 
 const DEFAULT_RPC_URLS = {
-  mainnet: "https://rpc.mainnet.near.org",
+  mainnet: "https://free.rpc.fastnear.com",
   testnet: "https://test.rpc.fastnear.com",
 };
 
@@ -184,8 +184,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
   }
 
   const value: NearContextValue = {
-    signIn,
-    signOut,
+    network,
     loading,
     connector,
     provider,
@@ -193,6 +192,8 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     getBalance,
     viewFunction,
     getAccessKeyList,
+    signIn,
+    signOut,
     signAndSendTransaction,
     signAndSendTransactions,
     callFunction,

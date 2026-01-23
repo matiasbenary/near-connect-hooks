@@ -4,13 +4,14 @@ React hooks for NEAR wallet integration using [@hot-labs/near-connect](https://g
 
 ## Features
 
-- Simple React hooks for NEAR wallet connection
-- Built on top of @hot-labs/near-connect for seamless wallet integration
-- TypeScript support with full type definitions
-- View and call smart contract functions
-- Automatic wallet state management
-- Sign in/out functionality
-- RPC provider access
+- ✅ Simple React hooks to connect NEAR wallets
+- ✅ Built on top of @hot-labs/near-connect for seamless wallet integration
+- ✅ TypeScript support with full type definitions
+- ✅ Sign in/out functionality
+- ✅ View and call smart contract functions
+- ✅ Fetch account balance and access keys
+- ✅ Sign and send transactions
+- ✅ Access to a Provider for custom RPC calls
 
 ## Installation
 
@@ -18,25 +19,13 @@ React hooks for NEAR wallet integration using [@hot-labs/near-connect](https://g
 npm install near-connect-hooks
 # or
 yarn add near-connect-hooks
+# or
+pnpm add near-connect-hooks
 ```
 
 ## Usage
 
 ### 1. Wrap your app with NearProvider
-
-```tsx
-import { NearProvider } from 'near-connect-hooks';
-
-function App() {
-  return (
-    <NearProvider>
-      <YourApp />
-    </NearProvider>
-  );
-}
-```
-
-#### Configuration Options
 
 The `NearProvider` accepts an optional `config` prop to customize the network and RPC provider:
 
@@ -47,8 +36,8 @@ function App() {
   return (
     <NearProvider
       config={{
-        network: 'mainnet', // or 'testnet' (default: 'testnet')
-        rpcUrl: 'https://rpc.mainnet.near.org', // Optional: custom RPC URL
+        network: 'mainnet', // (optional, defaults to 'testnet')
+        rpcUrl: 'https://free.rpc.fastnear.com', // (optional, defaults to 'https://test.rpc.fastnear.com')
       }}
     >
       <YourApp />
@@ -57,10 +46,6 @@ function App() {
 }
 ```
 
-**Default Settings:**
-- Network: `testnet`
-- RPC URL: `https://test.rpc.fastnear.com` (testnet) or `https://rpc.mainnet.near.org` (mainnet)
-
 ### 2. Use the hook in your components
 
 ```tsx
@@ -68,13 +53,22 @@ import { useNearWallet } from 'near-connect-hooks';
 
 function MyComponent() {
   const {
-    signedAccountId,
-    wallet,
+    loading,
+    connector,
+    provider,
+    getBalance,
+    viewFunction,
+    getAccessKeyList,
     signIn,
     signOut,
-    loading,
-    viewFunction,
-    callFunction
+    signedAccountId,
+    signAndSendTransaction,
+    signAndSendTransactions,
+    callFunction,
+    transfer,
+    addFunctionCallKey,
+    signNEP413Message,
+    deleteKey,
   } = useNearWallet();
 
   // Check if user is signed in
@@ -95,6 +89,23 @@ function MyComponent() {
 }
 ```
 
+## Example
+
+Check the `example` directory for a complete Next.js application demonstrating how to use the hooks with a NEAR guestbook smart contract.
+
+To run the example:
+
+```bash
+# Install the library and build it
+npm install
+npm run build
+
+# Navigate to the example directory
+cd example
+npm install
+npm run dev
+```
+
 ## API Reference
 
 ### `useNearWallet()`
@@ -104,9 +115,6 @@ Returns an object with the following properties:
 #### `signedAccountId: string`
 The account ID of the currently connected wallet, or empty string if not connected.
 
-#### `wallet: NearWalletBase | undefined`
-The wallet instance from @hot-labs/near-connect.
-
 #### `loading: boolean`
 Loading state while initializing the wallet connection.
 
@@ -115,12 +123,6 @@ Function to initiate wallet connection.
 
 #### `signOut: () => Promise<void>`
 Function to disconnect the current wallet.
-
-#### `provider: JsonRpcProvider`
-Direct access to the NEAR JSON-RPC provider for custom queries.
-
-#### `connector: NearConnector`
-Direct access to the NEAR connector instance from @hot-labs/near-connect.
 
 #### `network: "mainnet" | "testnet"`
 The currently configured network.
@@ -170,78 +172,79 @@ await callFunction({
 });
 ```
 
-## Complete Example
+#### `getBalance(accountId): Promise<bigint>`
+Fetch the account balance in yoctoNEAR for the provided account ID.
 
-```tsx
-import { useNearWallet } from 'near-connect-hooks';
-import { utils } from 'near-api-js';
+#### `getAccessKeyList(accountId): Promise<AccessKeyList & { block_hash: string; block_height: number; }>`
+Fetch the list of access keys for an account, including the block hash and height of the response.
 
-function GuestBook() {
-  const { signedAccountId, viewFunction, callFunction } = useNearWallet();
-  const [messages, setMessages] = useState([]);
+#### `transfer(params): Promise<FinalExecutionOutcome>`
+Send a simple transfer.
 
-  // Fetch messages
-  useEffect(() => {
-    viewFunction({
-      contractId: 'guestbook.testnet',
-      method: 'get_messages',
-      args: { from_index: '0', limit: '10' }
-    }).then(setMessages);
-  }, []);
-
-  // Add a message
-  const handleSubmit = async (text: string, donation: string) => {
-    const deposit = utils.format.parseNearAmount(donation);
-
-    await callFunction({
-      contractId: 'guestbook.testnet',
-      method: 'add_message',
-      args: { text },
-      deposit
-    });
-
-    // Refresh messages
-    const updated = await viewFunction({
-      contractId: 'guestbook.testnet',
-      method: 'get_messages',
-      args: { from_index: '0', limit: '10' }
-    });
-    setMessages(updated);
-  };
-
-  return (
-    <div>
-      {messages.map((msg, i) => (
-        <div key={i}>
-          <strong>{msg.sender}:</strong> {msg.text}
-        </div>
-      ))}
-    </div>
-  );
+**Parameters:**
+```typescript
+{
+  receiverId: string;  // Receiver account ID
+  amount: string;      // Amount in yoctoNEAR
 }
 ```
 
-## Example Project
+#### `addFunctionCallKey(params): Promise<FinalExecutionOutcome>`
+Add an access key restricted to specified contract methods.
 
-Check out the `/example` directory for a complete Next.js application demonstrating how to use the hooks with a NEAR guestbook smart contract.
-
-To run the example:
-
-```bash
-cd example
-npm install
-npm run dev
+**Parameters:**
+```typescript
+{
+  publicKey: string;       // Public key to add
+  contractId: string;      // Contract the key can call
+  methodNames?: string[];  // Allowed methods (empty = any)
+  allowance?: string;      // Allowance in yoctoNEAR (optional)
+}
 ```
 
-## Requirements
+#### `deleteKey(params): Promise<FinalExecutionOutcome>`
+Delete an access key from the signed-in account.
 
-- React >= 18.0.0
-- react-dom >= 18.0.0
+**Parameters:**
+```typescript
+{
+  publicKey: string;  // Public key to remove
+}
+```
 
-## Dependencies
+#### `signNEP413Message(params): Promise<SignedMessage>`
+Sign an off-chain message following NEP-413.
 
-- [@hot-labs/near-connect](https://github.com/hot-dao/near-connect) - NEAR wallet connection
-- @near-js/providers - NEAR RPC provider
+**Parameters:**
+```typescript
+{
+  message: string;       // Human-readable message
+  recipient: string;     // Intended recipient account ID
+  nonce: Uint8Array;     // Unique nonce
+}
+```
+
+The following low-level methods are also available:
+
+#### `connector: NearConnector`
+Direct access to the NEAR connector instance from @hot-labs/near-connect.
+
+#### `provider: JsonRpcProvider`
+Direct access to a NEAR JSON-RPC provider from `near-api-js` for custom RPC queries.
+
+#### `signAndSendTransaction(params): Promise<FinalExecutionOutcome>`
+Sign and send a single transaction.
+
+**Parameters:**
+```typescript
+{
+  receiverId: string;       // Receiver account ID
+  actions: Action[];        // Actions to execute
+}
+```
+
+#### `signAndSendTransactions(transactions): Promise<FinalExecutionOutcome[]>`
+Sign and send multiple transactions in one request.
 
 ## License
 
