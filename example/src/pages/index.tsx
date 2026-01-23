@@ -86,7 +86,7 @@ export default function Home() {
       {
         sender: signedAccountId,
         text: message.value,
-        premium: parseFloat(donation.value) >= 0.1,
+        premium: donation.value >= 0.1,
       },
       ...messages,
     ]);
