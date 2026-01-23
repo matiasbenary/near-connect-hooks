@@ -1,5 +1,7 @@
-import { NearConnector, type SignedMessage, type NearWalletBase } from "@hot-labs/near-connect";
-import { type FinalExecutionOutcome, JsonRpcProvider } from "near-api-js";
+import { type NearConnector, type SignedMessage, SignAndSendTransactionsParams } from "@hot-labs/near-connect";
+import { type FinalExecutionOutcome, type JsonRpcProvider } from "near-api-js";
+import type { AccessKeyList } from "near-api-js";
+import type { Action } from "./actions";
 
 export interface ViewFunctionParams {
   contractId: string;
@@ -37,10 +39,13 @@ export interface DeleteKeyParams {
 
 export interface NearContextValue {
   signedAccountId: string;
-  wallet: NearWalletBase | undefined;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  getBalance: (accountId: string) => Promise<bigint>;
+  getAccessKeyList: (accountId: string) => Promise<AccessKeyList & { block_hash: string; block_height: number; }>;
+  signAndSendTransaction: (params: { receiverId: string; actions: Action[]; }) => Promise<FinalExecutionOutcome>;
+  signAndSendTransactions: (transactions: SignAndSendTransactionsParams) => Promise<FinalExecutionOutcome[]>;
   viewFunction: (params: ViewFunctionParams) => Promise<any>;
   callFunction: (params: FunctionCallParams) => Promise<FinalExecutionOutcome>;
   transfer: (params: TransferParams) => Promise<FinalExecutionOutcome>;
@@ -49,5 +54,4 @@ export interface NearContextValue {
   signNEP413Message: (params: { message: string; recipient: string; nonce: Uint8Array; }) => Promise<SignedMessage>;
   provider: JsonRpcProvider;
   connector: NearConnector;
-  network: "mainnet" | "testnet";
 }

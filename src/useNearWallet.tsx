@@ -6,9 +6,9 @@ import {
   ReactNode,
   useMemo,
 } from "react";
-import { JsonRpcProvider } from "near-api-js";
-import { NearConnector, type SignedMessage, type NearWalletBase } from "@hot-labs/near-connect";
-import { Actions, sendTransaction } from "./actions.js";
+import { AccessKeyList, JsonRpcProvider } from "near-api-js";
+import { NearConnector, type SignedMessage, type NearWalletBase, SignAndSendTransactionsParams } from "@hot-labs/near-connect";
+import { Action, Actions } from "./actions.js";
 import type {
   ViewFunctionParams,
   FunctionCallParams,
@@ -108,6 +108,28 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     return provider.callFunction({ contractId, method, args });
   }
 
+  async function getBalance(accountId: string) {
+    const account = await provider.viewAccount({ accountId, blockQuery: { finality: "final" } });
+    return account.amount;
+  }
+
+  async function getAccessKeyList(accountId: string) {
+    const accessKeyList = await provider.viewAccessKeyList({ accountId, finalityQuery: { finality: "final" } });
+    return accessKeyList as unknown as AccessKeyList & { block_hash: string; block_height: number; };
+  }
+
+  async function signAndSendTransaction({ receiverId, actions }: { receiverId: string, actions: Action[] }) {
+    const wallet = await connector.wallet();
+    if (!wallet) throw new Error("Wallet is not connected");
+    return wallet.signAndSendTransaction({ receiverId, actions });
+  }
+
+  async function signAndSendTransactions(transactions: SignAndSendTransactionsParams) {
+    const wallet = await connector.wallet();
+    if (!wallet) throw new Error("Wallet is not connected");
+    return wallet.signAndSendTransactions(transactions);
+  }
+
   async function callFunction({
     contractId,
     method,
@@ -115,13 +137,20 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     gas = "30000000000000",
     deposit = "0",
   }: FunctionCallParams) {
-    return sendTransaction(connector, contractId, [
-      Actions.functionCall(method, args, gas, deposit),
-    ]);
+    return signAndSendTransaction(
+      {
+        receiverId: contractId, actions: [
+          Actions.functionCall(method, args, gas, deposit),
+        ]
+      });
   }
 
   async function transfer({ receiverId, amount }: TransferParams) {
-    return sendTransaction(connector, receiverId, [Actions.transfer(amount)]);
+    return signAndSendTransaction(
+      {
+        receiverId,
+        actions: [Actions.transfer(amount)]
+      });
   }
 
   async function addFunctionCallKey({
@@ -130,37 +159,47 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     methodNames = [],
     allowance,
   }: AddFunctionCallKeyParams) {
-    return sendTransaction(connector, signedAccountId, [
-      Actions.addFunctionCallKey(publicKey, contractId, methodNames, allowance),
-    ]);
+    return signAndSendTransaction(
+      {
+        receiverId: signedAccountId,
+        actions: [
+          Actions.addFunctionCallKey(publicKey, contractId, methodNames, allowance),
+        ]
+      });
   }
 
   async function deleteKey({ publicKey }: DeleteKeyParams) {
-    return sendTransaction(connector, signedAccountId, [
-      Actions.deleteKey(publicKey),
-    ]);
+    return signAndSendTransaction(
+      {
+        receiverId: signedAccountId,
+        actions: [
+          Actions.deleteKey(publicKey),
+        ]
+      });
   }
 
-  async function signNEP413Message({ message, recipient, nonce } : { message: string; recipient: string; nonce: Uint8Array; }): Promise<SignedMessage> {
+  async function signNEP413Message({ message, recipient, nonce }: { message: string; recipient: string; nonce: Uint8Array; }): Promise<SignedMessage> {
     if (!wallet) throw new Error("Wallet is not connected");
     return wallet.signMessage({ message, recipient, nonce });
   }
 
   const value: NearContextValue = {
-    signedAccountId,
-    wallet,
     signIn,
     signOut,
     loading,
+    connector,
+    provider,
+    signedAccountId,
+    getBalance,
     viewFunction,
+    getAccessKeyList,
+    signAndSendTransaction,
+    signAndSendTransactions,
     callFunction,
     transfer,
     addFunctionCallKey,
     signNEP413Message,
     deleteKey,
-    provider,
-    connector,
-    network,
   };
 
   return <NearContext.Provider value={value}>{children}</NearContext.Provider>;

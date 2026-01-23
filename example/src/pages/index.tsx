@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
-import { yoctoToNear } from "near-api-js"
+import { nearToYocto, yoctoToNear } from "near-api-js"
 import Form from "@/components/Form";
 import SignIn from "@/components/SignIn";
 import Messages from "@/components/Messages";
@@ -15,7 +15,7 @@ type GuestbookMessage = {
 };
 
 export default function Home() {
-  const { signedAccountId, viewFunction, callFunction } = useNearWallet();
+  const { signedAccountId, viewFunction, callFunction, getAccessKeyList, getBalance } = useNearWallet();
   const [messages, setMessages] = useState<GuestbookMessage[]>([]);
 
   useEffect(() => {
@@ -23,6 +23,19 @@ export default function Home() {
       setMessages(msgs.reverse())
     );
   }, []);
+
+  useEffect(() => {
+    // just here to test some features
+    if (signedAccountId) {
+      getBalance(signedAccountId).then((balance) => {
+        console.log(`Balance for ${signedAccountId}: ${yoctoToNear(balance)} NEAR`);
+      });
+      
+      getAccessKeyList(signedAccountId).then((accessKeyList) => {
+        console.log(`Access Keys for ${signedAccountId}:`, accessKeyList);
+      });
+    }
+  }, [signedAccountId, getBalance, getAccessKeyList]);
 
   const getLast10Messages = async (): Promise<GuestbookMessage[]> => {
     const total_messages = (await viewFunction({
@@ -45,21 +58,21 @@ export default function Home() {
     const target = e.target as typeof e.target & {
       fieldset: { disabled: boolean };
       message: { value: string };
-      donation: { value: string };
+      donation: { value: number };
     };
 
     const { fieldset, message, donation } = target;
     fieldset.disabled = true;
 
-    const deposit = donation.value && parseFloat(donation.value) > 0
-      ? yoctoToNear(BigInt(donation.value))
+    const deposit = donation.value && donation.value > 0
+      ? nearToYocto(donation.value)
       : undefined;
 
     callFunction({
       contractId: GuestbookNearContract,
       method: "add_message",
       args: { text: message.value },
-      deposit,
+      deposit: deposit?.toString() || "0",
     }).catch((e) => {
       console.log(e);
 
