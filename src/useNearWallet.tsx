@@ -88,7 +88,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     };
   }, [connector]);
 
-  async function signIn({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams }) {
+  async function signIn({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams } = {}) {
     if (!connector) return;
 
     let addFCK: ConnectorAddFunctionCallKeyParams | undefined = undefined;
