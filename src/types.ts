@@ -41,7 +41,7 @@ export interface DeleteKeyParams {
 export interface NearContextValue {
   network: "mainnet" | "testnet";
   signedAccountId: string;
-  signIn: ({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams }) => Promise<void>;
+  signIn: (params?: { addFunctionCallKey?: CreateAccessKeyParams }) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
   getBalance: (accountId: string) => Promise<bigint>;
