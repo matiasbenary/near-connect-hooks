@@ -1,6 +1,6 @@
 {
   "name": "near-connect-hooks",
-  "version": "1.1.2",
+  "version": "1.1.4",
   "description": "React hooks for NEAR wallet integration using @hot-labs/near-connect",
   "type": "module",
   "main": "./dist/index.js",
@@ -38,10 +38,10 @@
   },
   "dependencies": {
     "near-api-js": "^7",
-    "function-call-key-plugin": "^1.0.1"
+    "function-call-key-plugin": "^1.0.2",
+    "@hot-labs/near-connect": "^0.11.1"
   },
   "peerDependencies": {
-    "@hot-labs/near-connect": "^0.11.1",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
