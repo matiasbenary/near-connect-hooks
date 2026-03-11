@@ -7,7 +7,13 @@ import {
   useMemo,
 } from "react";
 import { AccessKeyList, JsonRpcProvider } from "near-api-js";
-import { NearConnector, type SignedMessage, type NearWalletBase, SignAndSendTransactionsParams } from "@hot-labs/near-connect";
+import {
+  NearConnector,
+  type SignedMessage,
+  type NearWalletBase,
+  type SignAndSendTransactionsParams,
+  type AddFunctionCallKeyParams as ConnectorAddFunctionCallKeyParams,
+} from "@hot-labs/near-connect";
 import { Action, Actions } from "./actions.js";
 import type {
   ViewFunctionParams,
@@ -17,6 +23,7 @@ import type {
   DeleteKeyParams,
   NearContextValue,
 } from "./types.js";
+import AccessKeyPlugin, { CreateAccessKeyParams } from "function-call-key-plugin";
 
 const DEFAULT_RPC_URLS = {
   mainnet: "https://free.rpc.fastnear.com",
@@ -47,6 +54,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
 
   useEffect(() => {
     async function initializeConnector() {
+      connector.use(AccessKeyPlugin);
       const connectedWallet = await connector.getConnectedWallet().catch(() => null);
 
       if (connectedWallet) {
@@ -80,10 +88,25 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     };
   }, [connector]);
 
-  async function signIn() {
+  async function signIn({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams }) {
     if (!connector) return;
-    const wallet = await connector.connect();
-    console.log("Connected wallet", wallet);
+
+    let addFCK: ConnectorAddFunctionCallKeyParams | undefined = undefined;
+
+    if (addFunctionCallKey) {
+      const { contractId, methodNames, allowance } = addFunctionCallKey;
+      addFCK = {
+        contractId,
+        allowMethods: methodNames ? { anyMethod: false, methodNames } : { anyMethod: true },
+        gasAllowance: allowance ? { kind: "limited", amount: allowance } : { kind: "unlimited" },
+        publicKey: AccessKeyPlugin.createAccessKey({ contractId, methodNames, allowance })
+      }
+    }
+
+    const wallet = await connector.connect({
+      addFunctionCallKey: addFCK,
+    });
+
     if (wallet) {
       setWallet(wallet);
       const accounts = await wallet.getAccounts();
@@ -94,7 +117,6 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
   async function signOut() {
     if (!connector || !wallet) return;
     await connector.disconnect(wallet);
-    console.log("Disconnected wallet");
 
     setWallet(undefined);
     setSignedAccountId("");

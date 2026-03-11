@@ -2,6 +2,7 @@ import { type NearConnector, type SignedMessage, SignAndSendTransactionsParams }
 import { type FinalExecutionOutcome, type JsonRpcProvider } from "near-api-js";
 import type { AccessKeyList } from "near-api-js";
 import type { Action } from "./actions";
+import { CreateAccessKeyParams } from "function-call-key-plugin";
 
 export interface ViewFunctionParams {
   contractId: string;
@@ -40,7 +41,7 @@ export interface DeleteKeyParams {
 export interface NearContextValue {
   network: "mainnet" | "testnet";
   signedAccountId: string;
-  signIn: () => Promise<void>;
+  signIn: ({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams }) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
   getBalance: (accountId: string) => Promise<bigint>;
