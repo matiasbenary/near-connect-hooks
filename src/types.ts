@@ -1,8 +1,7 @@
-import { type NearConnector, type SignedMessage, SignAndSendTransactionsParams } from "@hot-labs/near-connect";
-import { type FinalExecutionOutcome, type JsonRpcProvider } from "near-api-js";
+import { type NearConnector, type SignedMessage, SignAndSendTransactionsParams, type AddFunctionCallKeyParams as ConnectorAddFunctionCallKeyParams } from "@hot-labs/near-connect";
+import { type FinalExecutionOutcome, type Provider } from "near-api-js";
 import type { AccessKeyList } from "near-api-js";
 import type { Action } from "./actions";
-import { CreateAccessKeyParams } from "function-call-key-plugin";
 
 export interface ViewFunctionParams {
   contractId: string;
@@ -41,7 +40,7 @@ export interface DeleteKeyParams {
 export interface NearContextValue {
   network: "mainnet" | "testnet";
   signedAccountId: string;
-  signIn: (params?: { addFunctionCallKey?: CreateAccessKeyParams }) => Promise<void>;
+  signIn: (params?: { addFunctionCallKey: Omit<ConnectorAddFunctionCallKeyParams, "publicKey"> }) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
   getBalance: (accountId: string) => Promise<bigint>;
@@ -49,11 +48,12 @@ export interface NearContextValue {
   signAndSendTransaction: (params: { receiverId: string; actions: Action[]; }) => Promise<FinalExecutionOutcome>;
   signAndSendTransactions: (transactions: SignAndSendTransactionsParams) => Promise<FinalExecutionOutcome[]>;
   viewFunction: (params: ViewFunctionParams) => Promise<any>;
-  callFunction: (params: FunctionCallParams) => Promise<FinalExecutionOutcome>;
+  callFunction: (params: FunctionCallParams) => Promise<any>;
+  callFunctionRaw: (params: FunctionCallParams) => Promise<FinalExecutionOutcome>;
   transfer: (params: TransferParams) => Promise<FinalExecutionOutcome>;
   addFunctionCallKey: (params: AddFunctionCallKeyParams) => Promise<FinalExecutionOutcome>;
   deleteKey: (params: DeleteKeyParams) => Promise<FinalExecutionOutcome>;
   signNEP413Message: (params: { message: string; recipient: string; nonce: Uint8Array; }) => Promise<SignedMessage>;
-  provider: JsonRpcProvider;
+  provider: Provider;
   connector: NearConnector;
 }

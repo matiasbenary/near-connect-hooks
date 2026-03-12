@@ -27,7 +27,7 @@ pnpm add near-connect-hooks
 
 ### 1. Wrap your app with NearProvider
 
-The `NearProvider` accepts an optional `config` prop to customize the network and RPC provider:
+The `NearProvider` accepts an optional `config` prop to customize the network and RPC providers:
 
 ```tsx
 import { NearProvider } from 'near-connect-hooks';
@@ -37,7 +37,10 @@ function App() {
     <NearProvider
       config={{
         network: 'mainnet', // (optional, defaults to 'testnet')
-        rpcUrl: 'https://free.rpc.fastnear.com', // (optional, defaults to 'https://test.rpc.fastnear.com')
+        providers: {
+          mainnet: ['https://free.rpc.fastnear.com'],
+          testnet: ['https://test.rpc.fastnear.com'],
+        }, // (optional, defaults are built in)
       }}
     >
       <YourApp />
@@ -65,6 +68,7 @@ function MyComponent() {
     signAndSendTransaction,
     signAndSendTransactions,
     callFunction,
+    callFunctionRaw,
     transfer,
     addFunctionCallKey,
     signNEP413Message,
@@ -118,8 +122,19 @@ The account ID of the currently connected wallet, or empty string if not connect
 #### `loading: boolean`
 Loading state while initializing the wallet connection.
 
-#### `signIn: () => Promise<void>`
-Function to initiate wallet connection.
+#### `signIn: (params?: { addFunctionCallKey: Omit<AddFunctionCallKeyParams, "publicKey"> }) => Promise<void>`
+Function to initiate wallet connection. Optionally accepts `addFunctionCallKey` to create a function-call key during sign-in.
+
+**Example:**
+```typescript
+await signIn({
+  addFunctionCallKey: {
+    contractId: 'guestbook.testnet',
+    allowMethods: { anyMethod: false, methodNames: ['add_message'] },
+    gasAllowance: { kind: 'limited', amount: '250000000000000000000000' },
+  },
+});
+```
 
 #### `signOut: () => Promise<void>`
 Function to disconnect the current wallet.
@@ -150,6 +165,9 @@ const messages = await viewFunction({
 
 #### `callFunction(params): Promise<any>`
 Call a contract method that modifies state (requires wallet signature and gas).
+
+> [!NOTE] 
+> Use `callFunctionRaw` if you need access to the full transaction result instead of just the last result.
 
 **Parameters:**
 ```typescript
@@ -229,8 +247,8 @@ The following low-level methods are also available:
 #### `connector: NearConnector`
 Direct access to the NEAR connector instance from @hot-labs/near-connect.
 
-#### `provider: JsonRpcProvider`
-Direct access to a NEAR JSON-RPC provider from `near-api-js` for custom RPC queries.
+#### `provider: Provider`
+Direct access to a NEAR RPC provider from `near-api-js` for custom RPC queries.
 
 #### `signAndSendTransaction(params): Promise<FinalExecutionOutcome>`
 Sign and send a single transaction.

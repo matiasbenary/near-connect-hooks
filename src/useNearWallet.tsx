@@ -6,7 +6,7 @@ import {
   ReactNode,
   useMemo,
 } from "react";
-import { AccessKeyList, JsonRpcProvider } from "near-api-js";
+import { AccessKeyList, FailoverRpcProvider, getTransactionLastResult, JsonRpcProvider, nearToYocto } from "near-api-js";
 import {
   NearConnector,
   type SignedMessage,
@@ -23,11 +23,11 @@ import type {
   DeleteKeyParams,
   NearContextValue,
 } from "./types.js";
-import AccessKeyPlugin, { CreateAccessKeyParams } from "function-call-key-plugin";
+import { createAccessKeyPlugin } from "function-call-key-plugin";
 
-const DEFAULT_RPC_URLS = {
-  mainnet: "https://free.rpc.fastnear.com",
-  testnet: "https://test.rpc.fastnear.com",
+const DEFAULT_RPC_PROVIDERS = {
+  mainnet: ["https://free.rpc.fastnear.com"],
+  testnet: ["https://test.rpc.fastnear.com"],
 };
 
 const NearContext = createContext<NearContextValue | undefined>(undefined);
@@ -40,11 +40,10 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
   const [loading, setLoading] = useState(true);
 
   const network = config.network || "testnet";
-  const rpcUrl = DEFAULT_RPC_URLS[network];
-
+  const urls = (config.providers && config.providers[network]?.length) ? config.providers[network] : DEFAULT_RPC_PROVIDERS[network];
   const provider = useMemo(
-    () => new JsonRpcProvider({ url: rpcUrl }),
-    [rpcUrl]
+    () => new FailoverRpcProvider(urls.map(url => new JsonRpcProvider({ url }))),
+    [config.providers]
   );
 
   const connector = useMemo(
@@ -52,9 +51,11 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     [network]
   );
 
+  const accessKeyPlugin = useMemo(() => createAccessKeyPlugin({ network, providers: config.providers }), [network]);
+
   useEffect(() => {
     async function initializeConnector() {
-      connector.use(AccessKeyPlugin);
+      connector.use(accessKeyPlugin);
       const connectedWallet = await connector.getConnectedWallet().catch(() => null);
 
       if (connectedWallet) {
@@ -88,19 +89,36 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     };
   }, [connector]);
 
-  async function signIn({ addFunctionCallKey }: { addFunctionCallKey?: CreateAccessKeyParams } = {}) {
+  async function signIn(param?: { addFunctionCallKey: Omit<ConnectorAddFunctionCallKeyParams, "publicKey"> }) {
     if (!connector) return;
 
     let addFCK: ConnectorAddFunctionCallKeyParams | undefined = undefined;
 
-    if (addFunctionCallKey) {
-      const { contractId, methodNames, allowance } = addFunctionCallKey;
+    if (param) {
+      const { contractId, allowMethods, gasAllowance } = param.addFunctionCallKey;
+
+      let allowance: string;
+
+      if (gasAllowance) {
+        allowance = gasAllowance.kind === "unlimited" ? "0" : gasAllowance.amount;
+      } else {
+        allowance = nearToYocto("0.25").toString();
+      }
+
+      const methodNames = allowMethods.anyMethod ? [] : allowMethods.methodNames;
+
+      const publicKey = accessKeyPlugin.createLocalKeyFor({
+        contractId,
+        methodNames,
+        allowance,
+      });
+
       addFCK = {
         contractId,
-        allowMethods: methodNames ? { anyMethod: false, methodNames } : { anyMethod: true },
-        gasAllowance: allowance ? { kind: "limited", amount: allowance } : { kind: "unlimited" },
-        publicKey: AccessKeyPlugin.createAccessKey({ contractId, methodNames, allowance })
-      }
+        allowMethods,
+        gasAllowance,
+        publicKey,
+      };
     }
 
     const wallet = await connector.connect({
@@ -152,7 +170,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     return wallet.signAndSendTransactions(transactions);
   }
 
-  async function callFunction({
+  async function callFunctionRaw({
     contractId,
     method,
     args = {},
@@ -165,6 +183,17 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
           Actions.functionCall(method, args, gas, deposit),
         ]
       });
+  }
+
+  async function callFunction({
+    contractId,
+    method,
+    args = {},
+    gas = "30000000000000",
+    deposit = "0",
+  }: FunctionCallParams) {
+    const result = await callFunctionRaw({ contractId, method, args, gas, deposit });
+    return getTransactionLastResult(result);
   }
 
   async function transfer({ receiverId, amount }: TransferParams) {
@@ -219,6 +248,7 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
     signAndSendTransaction,
     signAndSendTransactions,
     callFunction,
+    callFunctionRaw,
     transfer,
     addFunctionCallKey,
     signNEP413Message,

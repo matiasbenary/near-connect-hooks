@@ -14,7 +14,7 @@ export const Navigation = () => {
       signIn({
         addFunctionCallKey: {
           contractId: GuestbookNearContract,
-          methodNames: ['add_message']
+          allowMethods: { anyMethod: false, methodNames: ["add_message"] },
         }
       });
     }
