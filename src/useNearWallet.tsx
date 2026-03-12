@@ -40,18 +40,29 @@ export function NearProvider({ children, config = {} }: { children: ReactNode, c
   const [loading, setLoading] = useState(true);
 
   const network = config.network || "testnet";
-  const urls = (config.providers && config.providers[network]?.length) ? config.providers[network] : DEFAULT_RPC_PROVIDERS[network];
+  const defaultConf = {
+    ...config,
+    network,
+    providers: {
+      mainnet: (config.providers && config.providers.mainnet) ? config.providers.mainnet : DEFAULT_RPC_PROVIDERS.mainnet,
+      testnet: (config.providers && config.providers.testnet) ? config.providers.testnet : DEFAULT_RPC_PROVIDERS.testnet,
+    },
+  }
+
   const provider = useMemo(
-    () => new FailoverRpcProvider(urls.map(url => new JsonRpcProvider({ url }))),
+    () => new FailoverRpcProvider(defaultConf.providers[network].map(url => new JsonRpcProvider({ url }))),
     [config.providers]
   );
 
   const connector = useMemo(
-    () => new NearConnector(config),
+    () => new NearConnector(defaultConf),
     [network]
   );
 
-  const accessKeyPlugin = useMemo(() => createAccessKeyPlugin({ network, providers: config.providers }), [network]);
+  const accessKeyPlugin = useMemo(
+    () => createAccessKeyPlugin({ network: connector.network, providers: connector.providers }),
+    [network]
+  );
 
   useEffect(() => {
     async function initializeConnector() {
